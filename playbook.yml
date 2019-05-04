@@ -1,0 +1,90 @@
+---
+- hosts: master
+  tasks: 
+
+  - name: update packages
+    apt:
+      update_cache: yes
+
+  - name: install docker
+    package:
+      name: docker.io
+      state: latest
+
+  - name: create /home/vagrant/kubernetes
+    file:
+      path: /home/vagrant/kubernetes
+      state: directory
+
+  - name: fetch and unzip k8s
+    unarchive:
+      src: https://dl.k8s.io/v1.14.0/kubernetes-server-linux-amd64.tar.gz
+      dest: /home/vagrant/
+      remote_src: yes
+    args:
+      creates: /home/vagrant/kubernetes/server/bin/kubeadm
+
+  - name: link binaries
+    file:
+      src: /home/vagrant/kubernetes/server/bin/kubelet
+      dest: /usr/local/bin/kubelet
+      state: link
+    
+  - name: run kubeadm
+    command: /home/vagrant/kubernetes/server/bin/kubeadm init --pod-network-cidr 192.168.0.0/16 --apiserver-advertise-address {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
+    args: 
+      creates: /etc/kubernetes/admin.conf
+    register: init-token
+
+  - name: create /home/vagrant/.kube
+    file:
+      path: /home/vagrant/.kube
+      state: directory
+
+  - name: copy kube config
+    command: cp /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+    args:
+      creates: /home/vagrant/.kube/config
+
+  - name: enable kubelet
+    systemd: 
+      name: kubelet
+      state: started
+      enabled: yes
+    
+  - name: list token
+    command: /home/vagrant/kubernetes/server/bin/kubeadm token list 
+    register: token
+
+- hosts: worker
+  tasks:
+
+  - name: update packages
+    apt:
+      update_cache: yes
+
+  - name: install docker
+    package:
+      name: docker.io
+      state: latest
+
+  - name: create /home/vagrant/kubernetes
+    file:
+      path: /home/vagrant/kubernetes
+      state: directory
+
+  - name: fetch and unzip k8s
+    unarchive:
+      src: https://dl.k8s.io/v1.14.0/kubernetes-server-linux-amd64.tar.gz
+      dest: /home/vagrant/
+      remote_src: yes
+
+  - name: join cluster
+    command: /home/vagrant/kubernetes/server/bin/kubeadm join 192.168.33.10:6443 --token 
+    
+  
+
+
+
+
+
