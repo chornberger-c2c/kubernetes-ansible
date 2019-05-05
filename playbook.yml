@@ -2,6 +2,17 @@
 - hosts: master
   tasks: 
 
+  - name: set hostname
+    hostname:
+      name: master
+
+  - name: set /etc/hosts
+    blockinfile:
+      path: /etc/hosts
+      block: |
+        192.168.33.10 master
+        192.168.33.20 worker 
+  
   - name: install docker
     apt:
       name: docker.io
@@ -68,6 +79,17 @@
 - hosts: worker
   tasks:
 
+  - name: set hostname
+    hostname:
+      name: worker
+
+  - name: set /etc/hosts
+    blockinfile:
+      path: /etc/hosts
+      block: |
+        192.168.33.10 master
+        192.168.33.20 worker
+
   - name: install docker
     apt:
       name: docker.io
@@ -96,6 +118,12 @@
   - name: install kubectl
     apt:
       name: kubectl
+
+  - name: enable kubelet
+    systemd: 
+      name: kubelet
+      state: started
+      enabled: yes
 
   - name: k8s token
     command: kubeadm token create --print-join-command
