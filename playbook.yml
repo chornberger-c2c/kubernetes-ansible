@@ -43,10 +43,9 @@
       name: kubectl
 
   - name: run kubeadm
-    command: kubeadm init --pod-network-cidr 192.168.0.0/16 --apiserver-advertise-address 192.168.33.10
+    command: kubeadm init --pod-network-cidr "192.168.0.0/16" --apiserver-advertise-address 192.168.33.10
     args: 
       creates: /etc/kubernetes/admin.conf
-    register: init-token
 
   - name: create /home/vagrant/.kube
     file:
@@ -74,7 +73,7 @@
     command: kubectl --kubeconfig /home/vagrant/.kube/config apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
   
   - name: setup calico
-    command: kubectl --kubeconfig /home/vagrant/.kube/config apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+    command: kubectl --kubeconfig /home/vagrant/.kube/config apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 
 - hosts: worker
   tasks:
