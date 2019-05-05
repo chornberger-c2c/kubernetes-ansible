@@ -2,36 +2,37 @@
 - hosts: master
   tasks: 
 
-  - name: update packages
-    apt:
-      update_cache: yes
-
   - name: install docker
-    package:
+    apt:
       name: docker.io
       state: latest
+      update_cache: yes
 
-  - name: create /home/vagrant/kubernetes
-    file:
-      path: /home/vagrant/kubernetes
-      state: directory
+  - name: add k8s repo
+    apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+  
+  - name: add k8s repo key
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
 
-  - name: fetch and unzip k8s
-    unarchive:
-      src: https://dl.k8s.io/v1.14.0/kubernetes-server-linux-amd64.tar.gz
-      dest: /home/vagrant/
-      remote_src: yes
-    args:
-      creates: /home/vagrant/kubernetes/server/bin/kubeadm
+  - name: install kubeadm
+    apt: 
+      name: kubeadm
+      update_cache: yes
+  
+  - name: install kubelet
+    apt: 
+      name: kubelet
 
-  - name: link binaries
-    file:
-      src: /home/vagrant/kubernetes/server/bin/kubelet
-      dest: /usr/local/bin/kubelet
-      state: link
-    
+  - name: install kubectl
+    apt:
+      name: kubectl
+
   - name: run kubeadm
-    command: /home/vagrant/kubernetes/server/bin/kubeadm init --pod-network-cidr 192.168.0.0/16 --apiserver-advertise-address {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
+    command: kubeadm init --pod-network-cidr 192.168.0.0/16 --apiserver-advertise-address 192.168.33.10
     args: 
       creates: /etc/kubernetes/admin.conf
     register: init-token
@@ -46,42 +47,64 @@
     args:
       creates: /home/vagrant/.kube/config
 
+  - name: chmod on kube config
+    file:
+      path: /home/vagrant/.kube/config
+      mode: 0755
+      owner: vagrant
+
   - name: enable kubelet
     systemd: 
       name: kubelet
       state: started
       enabled: yes
-    
-  - name: list token
-    command: /home/vagrant/kubernetes/server/bin/kubeadm token list 
-    register: token
+
+  - name: setup rbac
+    command: kubectl --kubeconfig /home/vagrant/.kube/config apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+  
+  - name: setup calico
+    command: kubectl --kubeconfig /home/vagrant/.kube/config apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
 
 - hosts: worker
   tasks:
 
-  - name: update packages
-    apt:
-      update_cache: yes
-
   - name: install docker
-    package:
+    apt:
       name: docker.io
       state: latest
+      update_cache: yes
 
-  - name: create /home/vagrant/kubernetes
-    file:
-      path: /home/vagrant/kubernetes
-      state: directory
+  - name: add k8s repo
+    apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+  
+  - name: add k8s repo key
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
 
-  - name: fetch and unzip k8s
-    unarchive:
-      src: https://dl.k8s.io/v1.14.0/kubernetes-server-linux-amd64.tar.gz
-      dest: /home/vagrant/
-      remote_src: yes
+  - name: install kubeadm
+    apt: 
+      name: kubeadm
+      update_cache: yes
+  
+  - name: install kubelet
+    apt: 
+      name: kubelet
 
-  - name: join cluster
-    command: /home/vagrant/kubernetes/server/bin/kubeadm join 192.168.33.10:6443 --token 
-    
+  - name: install kubectl
+    apt:
+      name: kubectl
+
+  - name: k8s token
+    command: kubeadm token create --print-join-command
+    register: token
+    delegate_to: "{{ groups['master'][0] }}"
+
+  - name: join master
+    command: "{{ token.stdout }}"
+
   
 
 
