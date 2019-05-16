@@ -14,7 +14,7 @@
 
   - name: install pip
     package:
-      name: pip
+      name: python-pip
       state: present
       
   - name: install docker python
@@ -43,4 +43,4 @@
 
   - name: install helm
     command: snap install helm --classic
-    
+  
