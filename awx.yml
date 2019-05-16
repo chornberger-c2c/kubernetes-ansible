@@ -12,7 +12,7 @@
       repo: https://github.com/ansible/awx.git
       dest: /opt/awx
       update: no
-      
+
   - name: apt update
     apt:
       update_cache: yes
@@ -78,7 +78,7 @@
     command: kubectl --kubeconfig /home/vagrant/.kube/config apply -f /home/vagrant/rbac-helm.yml
   
   - name: init helm
-    command: helm init --service-account tiller --history-max 200 --kubeconfig /home/vagrant/.kube/config
+    command: helm init --service-account tiller --history-max 200 --kubeconfig /home/vagrant/.kube/config --upgrade
 
   - name: copy awx inventory
     copy: 
