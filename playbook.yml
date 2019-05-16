@@ -131,10 +131,3 @@
 
   - name: join master
     command: "{{ token.stdout }}"
-
-  
-
-
-
-
-

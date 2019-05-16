@@ -1,0 +1,45 @@
+---
+- hosts: master
+  tasks:
+
+  - name: install git
+    package: 
+      name: git
+      state: present
+
+  - name: clone awx repo
+    git:
+      repo: https://github.com/ansible/awx.git
+      dest: /opt/awx
+
+  - name: install pip
+    package:
+      name: pip
+      state: present
+      
+  - name: install docker python
+    pip: docker
+
+  - name: install make
+    package:
+      name: make
+      state: present
+
+  - name: install ansible
+    package: 
+      name: ansible
+      state: present
+
+  - name: install nodejs
+    package: 
+      name: nodejs
+      state: present
+
+  - name: install npm
+    package:
+      name: npm
+      state: present
+
+  - name: install helm
+    command: snap install helm --classic
+    
